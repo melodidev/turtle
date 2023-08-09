@@ -22,6 +22,10 @@ body {
   height: 50px;
 }
 
+.width-200 {
+  width: 200px;
+}
+
 .min-width-35 {
   min-width: 35px;
 }
@@ -36,4 +40,27 @@ body {
 
 .bg-grey {
   background-color: var(--grey);
+}
+
+.border-grey {
+  border-color: var(--grey);
+}
+
+
+.box:not(:empty) {
+  animation-name: PopIn;
+  animation-duration: 100ms;
+}
+
+
+@keyframes PopIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  40% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
 }

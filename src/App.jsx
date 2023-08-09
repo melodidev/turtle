@@ -2,71 +2,63 @@ import { useState, useEffect } from "react";
 import Boxes from "./components/Boxes";
 import Keyboard from "./components/Keyboard";
 import GameOver from "./components/GameOver";
-import wordList from "./wordList";
+import { allWords, allAnswers } from "./wordList"
 import "./App.css";
 
+const wordLength = 5;
+const rowCount = 6;
+
 function randomWord() {
-  return wordList[Math.floor(Math.random() * wordList.length)];
+  return allAnswers[Math.floor(Math.random() * allAnswers.length)].toLowerCase();
 }
 
 export default function App() {
   let [isPlaying, setIsPlaying] = useState(true);
   let [isWon, setIsWon] = useState(false);
-  let [guess, setGuess] = useState("");
-  let [previousGuesses, setPreviousGuesses] = useState([]);
   let [disabled, setDisabled] = useState(false);
   let [target, setTarget] = useState(randomWord());
-
-  function handleKeyPress(event) {
-    if (disabled) return;
-
-    let key = event.key;
-    if (key == "Backspace") {
-      handleMove("⌫");
-    } else if (key == "Enter") {
-      handleMove("enter");
-    } else if (key >= "a" && key <= "z") {
-      handleMove(key);
-    }
-  }
+  let [guesses, setGuesses] = useState(Array(rowCount).fill(""));
+  let [currentGuessIndex, setCurrentGuessIndex] = useState(0);
+  console.log(target);
 
   function handleMove(key) {
     if (disabled) return;
+    let guess = guesses[currentGuessIndex];
 
-    let wordLength = 5;
-    
     if (key == "enter") {
       if (guess.length < wordLength) {
         alert("Not enough letters");
       } else if (guess.length == wordLength) {
-        if (wordList.includes(guess)) {
-          addToPrevGuesses(guess);
+        if (allWords.includes(guess)) {
+          checkGameEnd();
+          setCurrentGuessIndex(currentGuessIndex + 1);
         } else {
           alert("Not in word list");
         }
       }
-      return;
     } else if (key == "⌫") {
-      setGuess(guess.slice(0, -1));
-      return;
+      guess = guess.slice(0, -1);
     } else if (guess.length == wordLength) {
       return;
+    } else {
+      guess = guess + key;
     }
-    setGuess(prev => `${prev}${key}`)
-  }
 
-  function addToPrevGuesses(guess) {
-    setPreviousGuesses([...previousGuesses, guess]);
-    checkGameEnd();
-    setGuess("");
+    const guessesCopy = guesses.map((prevGuess, index) => {
+      if (index == currentGuessIndex) {
+        return guess;
+      }
+      return prevGuess;
+    });
+    setGuesses(guessesCopy);
   }
 
   function checkGameEnd() {
-    if (guess == target) {
+    if (guesses[currentGuessIndex] == target) {
       setIsPlaying(false);
       setDisabled(true);
       setIsWon(true);
-    } else if (previousGuesses.length == 5) {
+    } else if (currentGuessIndex == rowCount - 1) {
       setIsPlaying(false);
       setDisabled(true);
     }
@@ -76,8 +68,22 @@ export default function App() {
     setIsPlaying(true);
     setIsWon(false);
     setDisabled(false);
-    setPreviousGuesses([]);
+    setGuesses(Array(rowCount).fill(""));
+    setCurrentGuessIndex(0);
     setTarget(randomWord());
+  }
+
+  function handleKeyPress(event) {
+    if (disabled) return;
+
+    let key = event.key.toLowerCase();
+    if (key == "backspace") {
+      handleMove("⌫");
+    } else if (key == "enter") {
+      handleMove("enter");
+    } else if (key.length === 1 && key >= "a" && key <= "z") {
+      handleMove(key);
+    }
   }
 
   useEffect(() => {
@@ -88,21 +94,12 @@ export default function App() {
   }, [handleKeyPress]);
 
   return (
-    <>
-      <div className="text-center fs-1 text-uppercase m-2">Turtle</div>
-
-      {previousGuesses.map((guess, i) => <Boxes key={`a-${i}`} guess={guess} target={target} />)}
-      {(isPlaying || isWon) && (
-        <>
-          <Boxes guess={guess} />
-          {[...Array(5 - previousGuesses.length)].map((e, i) => <Boxes key={`b-${i}`} guess={""} />)}
-        </>
-      )}
-      
-      <Keyboard handleMove={handleMove} />
-
+    <div className="position-relative">
       {!isPlaying && <GameOver playAgain={playAgain} isWon={isWon} target={target} />}
-    </>
+      <div className="text-center fs-1 text-uppercase m-2 mt-4">Turtle</div>
+      {guesses.map((guess, i) => <Boxes key={i} index={i} currentGuessIndex={currentGuessIndex} guess={guess} target={target} />)}
+      <Keyboard handleMove={handleMove} target={target} guesses={guesses} currentGuessIndex={currentGuessIndex} />
+    </div>
   )
 }
 
